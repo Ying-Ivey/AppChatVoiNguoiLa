@@ -36,20 +36,18 @@ public class SocketConnection {
             System.out.println("========== Server has started ==========");
             LogServer.log("Socket",  "socket_start", "========== Server has started ===============");
 
+            Thread thread_reply_to_pairing = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    new WaitingForPairing().getPair();
+                }
+            });
+            thread_reply_to_pairing.start();
             while (true) {
                 socket = server.accept();
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                 LogServer.log("Socket",  "user_join", "user " + socket + " joined");
-                
-                Thread thread_reply_to_pairing = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        new WaitingForPairing().getPair();
-                    }
-                });
-                thread_reply_to_pairing.start();
-                
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -59,9 +57,7 @@ public class SocketConnection {
                 thread.start();
             }
 
-        } catch (IOException e) {
-//            System.err.println(e);
-        }
+        } catch (IOException e) {}
     }
 
     public void handleClient(Socket socket, BufferedReader in, BufferedWriter out) {
@@ -70,11 +66,9 @@ public class SocketConnection {
             boolean is_running = true;
             while (is_running) {
                 String dataReceive = in.readLine();
-                
                 if (dataReceive == null || dataReceive.trim().equals("")){
                     continue;
                 }
-                
                 System.out.println(dataReceive);
                 
                 LogServer.log("Socket", "socket_received", "Received: " + dataReceive);
@@ -116,7 +110,6 @@ public class SocketConnection {
                         if (!nickname.equals("") && socketClients.containsKey(nickname)){
                             socketClients.remove(nickname);
                         }
-                        
                         String dataSend = dataSocket.exportData_ExitApp();
                         out.write(dataSend);
                         out.newLine();
@@ -152,7 +145,6 @@ public class SocketConnection {
                 while (true) {
                     Map<String, Socket> userList = new SocketConnection().getSocketClients();
                     System.out.println(userList.size());
-
                     for (Map.Entry<String, Socket> e : userList.entrySet()) {
                         Socket socketClient = e.getValue();
                         if (socketClient.isClosed()) {
